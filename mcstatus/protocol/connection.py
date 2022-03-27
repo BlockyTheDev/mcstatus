@@ -231,15 +231,22 @@ class TCPSocketConnection(Connection):
             pass
 
 
+class NoConnectionsPossibleError(Exception):
+    pass
+
+
 class UDPSocketConnection(Connection):
     def __init__(self, addr: Address, timeout: float = 3):
         Connection.__init__(self)
         self.addr = addr
-        self.socket = socket.socket(
-            socket.AF_INET if ip_type(addr[0]) == 4 else socket.AF_INET6,
-            socket.SOCK_DGRAM,
-        )
-        self.socket.settimeout(timeout)
+        possible_connections = socket.getaddrinfo(addr.host, addr.port, type=socket.SOCK_DGRAM)
+        for conn in possible_connections:
+            self.socket = socket.socket(*conn[0:2])
+            self.socket.settimeout(timeout)
+            break
+        else:
+            raise NoConnectionsPossibleError
+        self.socket.connect(conn[-1])
 
     def flush(self) -> bytearray:
         raise NotImplementedError("UDPSocketConnection does not support flush()")

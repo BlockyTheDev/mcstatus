@@ -146,8 +146,7 @@ class JavaServer:
         :return: Query status information in a `QueryResponse` instance.
         :rtype: QueryResponse
         """
-        ip = str(self.address.resolve_ip())
-        return self._retry_query(Address(ip, self.address.port))
+        return self._retry_query(self.address)
 
     @retry(tries=3)
     def _retry_query(self, addr: Address) -> QueryResponse:
@@ -162,9 +161,7 @@ class JavaServer:
         :return: Query status information in a `QueryResponse` instance.
         :rtype: QueryResponse
         """
-        ip = str(self.address.async_resolve_ip())
-        return await self._retry_async_query(Address(ip, self.port))
-        return await self._retry_async_query(Address(ip, self.address.port))
+        return await self._retry_async_query(self.address)
 
     @retry(tries=3)
     async def _retry_async_query(self, address: Address) -> QueryResponse:
