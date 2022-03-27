@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING
-
-import dns.resolver
 
 from mcstatus.address import Address, async_minecraft_srv_address_lookup, minecraft_srv_address_lookup
 from mcstatus.bedrock_status import BedrockServerStatus, BedrockStatusResponse
@@ -149,16 +146,7 @@ class JavaServer:
         :return: Query status information in a `QueryResponse` instance.
         :rtype: QueryResponse
         """
-        # TODO: WARNING: This try-except for NXDOMAIN is only done because
-        # of failing tests on mac-os, which for some reason can't resolve 'localhost'
-        # into '127.0.0.1'. This try-except needs to be removed once this issue
-        # is resolved!
-        try:
-            ip = str(self.address.resolve_ip())
-        except dns.resolver.NXDOMAIN:
-            warnings.warn(f"Resolving IP for {self.address.host} failed with NXDOMAIN")
-            ip = self.address.host
-
+        ip = str(self.address.resolve_ip())
         return self._retry_query(Address(ip, self.address.port))
 
     @retry(tries=3)
@@ -174,16 +162,8 @@ class JavaServer:
         :return: Query status information in a `QueryResponse` instance.
         :rtype: QueryResponse
         """
-        # TODO: WARNING: This try-except for NXDOMAIN is only done because
-        # of failing tests on mac-os, which for some reason can't resolve 'localhost'
-        # into '127.0.0.1'. This try-except needs to be removed once this issue
-        # is resolved!
-        try:
-            ip = str(await self.address.async_resolve_ip())
-        except dns.resolver.NXDOMAIN:
-            warnings.warn(f"Resolving IP for {self.address.host} failed with NXDOMAIN")
-            ip = self.address.host
-
+        ip = str(self.address.async_resolve_ip())
+        return await self._retry_async_query(Address(ip, self.port))
         return await self._retry_async_query(Address(ip, self.address.port))
 
     @retry(tries=3)
