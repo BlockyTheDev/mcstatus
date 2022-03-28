@@ -1,7 +1,6 @@
-import ipaddress
 from pathlib import Path
 from typing import Awaitable, Callable, TypeVar
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import dns.resolver
 import pytest
@@ -153,69 +152,3 @@ class TestAddressConstructing:
     def test_address_with_multiple_ports(self):
         with pytest.raises(ValueError):
             Address.parse_address("example.org:12345:25565")
-
-
-class TestAddressIPResolving:
-    def setup_method(self):
-        self.host_addr = Address("example.org", 25565)
-        self.ipv4_addr = Address("1.1.1.1", 25565)
-        self.ipv6_addr = Address("::1", 25565)
-
-    def test_ip_resolver_with_hostname(self):
-        with patch("dns.resolver.resolve") as resolve:
-            answer = MagicMock()
-            answer.__str__.return_value = "48.225.1.104."
-            resolve.return_value = [answer]
-
-            resolved_ip = self.host_addr.resolve_ip(lifetime=3)
-
-            resolve.assert_called_once_with(self.host_addr.host, RdataType.A, lifetime=3)
-            assert isinstance(resolved_ip, ipaddress.IPv4Address)
-            assert str(resolved_ip) == "48.225.1.104"
-
-    @pytest.mark.asyncio
-    async def test_async_ip_resolver_with_hostname(self):
-        with patch("dns.asyncresolver.resolve") as resolve:
-            answer = MagicMock()
-            answer.__str__.return_value = "48.225.1.104."
-            resolve.side_effect = const_coro([answer])
-
-            resolved_ip = await self.host_addr.async_resolve_ip(lifetime=3)
-
-            resolve.assert_called_once_with(self.host_addr.host, RdataType.A, lifetime=3)
-            assert isinstance(resolved_ip, ipaddress.IPv4Address)
-            assert str(resolved_ip) == "48.225.1.104"
-
-    def test_ip_resolver_with_ipv4(self):
-        with patch("dns.resolver.resolve") as resolve:
-            resolved_ip = self.ipv4_addr.resolve_ip(lifetime=3)
-
-            resolve.assert_not_called()  # Make sure we didn't needlessly try to resolve
-            assert isinstance(resolved_ip, ipaddress.IPv4Address)
-            assert str(resolved_ip) == self.ipv4_addr.host
-
-    @pytest.mark.asyncio
-    async def test_async_ip_resolver_with_ipv4(self):
-        with patch("dns.asyncresolver.resolve") as resolve:
-            resolved_ip = await self.ipv4_addr.async_resolve_ip(lifetime=3)
-
-            resolve.assert_not_called()  # Make sure we didn't needlessly try to resolve
-            assert isinstance(resolved_ip, ipaddress.IPv4Address)
-            assert str(resolved_ip) == self.ipv4_addr.host
-
-    def test_ip_resolver_with_ipv6(self):
-        with patch("dns.resolver.resolve") as resolve:
-            resolved_ip = self.ipv6_addr.resolve_ip(lifetime=3)
-
-            resolve.assert_not_called()  # Make sure we didn't needlessly try to resolve
-            assert isinstance(resolved_ip, ipaddress.IPv6Address)
-            assert str(resolved_ip) == self.ipv6_addr.host
-
-    @pytest.mark.asyncio
-    async def test_async_ip_resolver_with_ipv6(self):
-        with patch("dns.asyncresolver.resolve") as resolve:
-            resolved_ip = await self.ipv6_addr.async_resolve_ip(lifetime=3)
-
-            resolve.assert_not_called()  # Make sure we didn't needlessly try to resolve
-            assert isinstance(resolved_ip, ipaddress.IPv6Address)
-            assert str(resolved_ip) == self.ipv6_addr.host

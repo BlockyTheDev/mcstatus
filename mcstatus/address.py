@@ -104,63 +104,6 @@ class Address(_AddressBase):
                 )
         return cls(host=hostname, port=port)
 
-    def resolve_ip(self, lifetime: Optional[float] = None) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
-        """Resolves a hostname's A record into an IP address.
-
-        If the host is already an IP, this resolving is skipped
-        and host is returned directly.
-
-        :param lifetime:
-            How many seconds a query should run before timing out.
-            Default value for this is inherited from dns.resolver.resolve
-        :raises dns.exception.DNSException:
-            One of the exceptions possibly raised by dns.resolver.resolve
-            Most notably this will be `dns.exception.Timeout` and `dns.resolver.NXDOMAIN`
-        """
-        if self._cached_ip is not None:
-            return self._cached_ip
-
-        try:
-            ip = ipaddress.ip_address(self.host)
-        except ValueError:
-            # ValueError is raised if the given address wasn't valid
-            # this means it's a hostname and we should try to resolve
-            # the A record
-            answers = dns.resolver.resolve(self.host, RdataType.A, lifetime=lifetime)
-            # There should only be one answer here, though in case the server
-            # does actually point to multiple IPs, we just pick the first one
-            answer = answers[0]
-            ip_addr = str(answer).rstrip(".")
-            ip = ipaddress.ip_address(ip_addr)
-
-        self._cached_ip = ip
-        return self._cached_ip
-
-    async def async_resolve_ip(self, lifetime: Optional[float] = None) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
-        """Resolves a hostname's A record into an IP address.
-
-        See the docstring for `resolve_ip` for further info. This function is purely
-        an async alternative to it.
-        """
-        if self._cached_ip is not None:
-            return self._cached_ip
-
-        try:
-            ip = ipaddress.ip_address(self.host)
-        except ValueError:
-            # ValueError is raised if the given address wasn't valid
-            # this means it's a hostname and we should try to resolve
-            # the A record
-            answers = await dns.asyncresolver.resolve(self.host, RdataType.A, lifetime=lifetime)
-            # There should only be one answer here, though in case the server
-            # does actually point to multiple IPs, we just pick the first one
-            answer = answers[0]
-            ip_addr = str(answer).rstrip(".")
-            ip = ipaddress.ip_address(ip_addr)
-
-        self._cached_ip = ip
-        return self._cached_ip
-
 
 def minecraft_srv_address_lookup(
     address: str,
